@@ -1,6 +1,7 @@
 <?php
 
 require_once('ORMGenerator.php');
+require_once('types/ORMType.php');
 
 abstract class ORMObjectPoolGenerator extends ORMGenerator {
 	/**
@@ -105,7 +106,8 @@ abstract class ORMObjectPoolGenerator extends ORMGenerator {
 		$this->init_function( 'get_table_for_field', array('name') );
 		$this->write( 'switch($name) {' );
 		foreach( $this->structure['structure'] as $field => $type ) {
-			if( is_array( $type ) ) {
+			$ormtype = ORMTypeFactory::factory($field, $type, $this->structure);
+			if(is_a($ormtype, 'ORMTypeLSRelation')) {
 				$this->write( 'case %s:', $field );
 				$this->write( 'return %s;', $this->lookup_class( $type[0] ) );
 			}
@@ -118,11 +120,12 @@ abstract class ORMObjectPoolGenerator extends ORMGenerator {
 	public function generate_get_all_columns_list() {
 		$columns = array();
 		$subobjs = array();
-		foreach ($this->structure['structure'] as $name => $type) {
-			if (is_array($type)) {
-				$subobjs[$name] = $type;
+		foreach ($this->structure['structure'] as $field => $type) {
+			$ormtype = ORMTypeFactory::factory($field, $type, $this->structure);
+			if(is_a($ormtype, 'ORMTypeLSRelation')) {
+				$subobjs[$field] = $type;
 			} else {
-				$columns[] = $name;
+				$columns[] = $field;
 			}
 		}
 		$this->init_function('get_all_columns_list', array('include_nested'), array('static'), array('include_nested'=>true));
